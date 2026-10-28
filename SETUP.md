@@ -4,8 +4,11 @@ Read this first if context was lost. Full design plan is in `PLAN.md`.
 
 ## Status as of 2026-10-28
 
-Scaffold only — no gameplay, no 3D scene, no AI logic yet. Everything below
-is verified to actually run (server boots, both `tsc --noEmit` pass clean).
+Phase 1 (Three.js scene) and Phase 2 (single-player scoring loop) are done
+and verified working in-browser. No AI, no server wiring, no multiplayer
+yet. All work since the initial scaffold is on branch
+`feature/threejs-scene` (NOT merged to `main` — user asked to keep working
+on a branch for now, don't push straight to main).
 
 ## What exists
 
@@ -13,17 +16,25 @@ is verified to actually run (server boots, both `tsc --noEmit` pass clean).
 cricket-app/
   client/        Vite + TypeScript + Three.js + colyseus.js
     src/
-      main.ts          default Vite starter content — NOT replaced yet
-      network.ts        createRoom() / joinRoom(code) using colyseus.js Client
+      main.ts          Three.js scene (pitch/outfield/camera/lighting) + scoring UI overlay, wired to game.ts
+      game.ts           pure game logic: MatchState, resolveBall (weighted random per shot type), playBall, oversDisplay
+      game.test.ts       assert-based self-check for game.ts (run with `npx tsx src/game.test.ts`)
+      network.ts        createRoom() / joinRoom(code) using colyseus.js Client — written but NOT yet called from UI
   server/        Colyseus 0.18 + TypeScript + express
     src/
       index.ts                Server + WebSocketTransport, defines room "cricket" on port 2567
-      rooms/CricketRoom.ts     MatchState schema (score/wickets/ballsBowled) + CricketRoom (maxClients 2)
+      rooms/CricketRoom.ts     MatchState schema (score/wickets/ballsBowled) + CricketRoom (maxClients 2) — logic not yet ported from client/src/game.ts
   shared/
     types.ts       MatchStateDTO interface (not wired into client or server yet)
   PLAN.md          full game plan (tech stack, phases, room-code flow, improvements list)
   README.md        run instructions
 ```
+
+Current gameplay: single-player only, one innings, 3 shot buttons (Defend/
+Normal/Big Shot), each with its own weighted runs/wicket outcome table in
+`game.ts`. Match is capped at `MAX_OVERS = 2` (12 balls) for fast testing —
+bump this up once the loop feels right. No bowling/AI side yet — it's just
+you batting against an invisible bowler.
 
 ## Key library-version gotchas hit today (don't re-debug these)
 
@@ -42,25 +53,29 @@ cricket-app/
 ## How to run it right now
 
 ```
-cd server && npm run dev      # starts Colyseus on ws://localhost:2567
-cd client && npm run dev      # starts Vite dev server, open the printed URL
+git checkout feature/threejs-scene   # this is where all the game.ts/main.ts work lives
+cd server && npm run dev      # starts Colyseus on ws://localhost:2567 (not used by the client yet)
+cd client && npm run dev      # starts Vite dev server, open the printed URL — scoreboard + 3 shot buttons work
 ```
 
-Nothing visible happens yet — `main.ts` is still the Vite template, and
-`network.ts` functions aren't called from anywhere. That's the next step.
+Run the game-logic self-check any time with `cd client && npx tsx src/game.test.ts`.
 
 ## Next steps (in order — see PLAN.md section 8 for full phase list)
 
-1. Replace `client/src/main.ts` default content with a Three.js scene
-   (empty stadium/pitch, camera) — Phase 1 of the plan.
-2. Build single-player loop client-side only (no network) — bowl/bat
-   buttons, score tracking in a local TS object.
-3. Add rule-based AI as the "second player" client-side.
-4. Port the outcome logic into `server/src/rooms/CricketRoom.ts`, make
-   server authoritative, wire `client/src/network.ts` into the UI
-   (Create Room button → `createRoom()`, Join box → `joinRoom(code)`).
+1. ~~Replace `client/src/main.ts` default content with a Three.js scene~~ — done.
+2. ~~Build single-player loop client-side only~~ — done (`game.ts` + UI overlay in `main.ts`).
+3. Add rule-based AI as the "second player" client-side — AI picks a shot/
+   line using the same kind of weighted logic as `game.ts`'s outcome tables,
+   see PLAN.md section 5 for the exact heuristic (aggressive when behind
+   rate, defensive when wickets low, randomness scaled by difficulty).
+4. Port the outcome logic into `server/src/rooms/CricketRoom.ts` (basically
+   move `game.ts`'s `playBall`/`resolveBall` server-side), make server
+   authoritative, wire `client/src/network.ts` into the UI (Create Room
+   button → `createRoom()`, Join box → `joinRoom(code)`).
 5. Test two-tab multiplayer locally.
 6. Deploy: server → Render.com free tier, client → Vercel/Netlify free tier.
+7. Merge `feature/threejs-scene` into `main` once it's stable (not done yet
+   — still iterating on this branch per user request).
 
 ## Decisions already made (don't re-ask)
 

@@ -1,0 +1,77 @@
+export type ShotType = "defend" | "normal" | "big";
+
+export interface MatchState {
+  score: number;
+  wickets: number;
+  balls: number; // legal balls bowled this innings
+  isOut: boolean;
+}
+
+export const MAX_WICKETS = 10;
+export const MAX_OVERS = 2; // short match for quick testing
+export const MAX_BALLS = MAX_OVERS * 6;
+
+export interface BallOutcome {
+  runs: number;
+  wicketLost: boolean;
+}
+
+// weighted outcome table per shot type: [runs, weight][]
+const OUTCOME_TABLES: Record<ShotType, [number, number][]> = {
+  defend: [
+    [0, 70],
+    [1, 25],
+    [-1, 5], // -1 = wicket
+  ],
+  normal: [
+    [0, 35],
+    [1, 30],
+    [2, 15],
+    [4, 15],
+    [-1, 5],
+  ],
+  big: [
+    [0, 25],
+    [4, 20],
+    [6, 25],
+    [-1, 30],
+  ],
+};
+
+function weightedPick(table: [number, number][]): number {
+  const total = table.reduce((sum, [, w]) => sum + w, 0);
+  let roll = Math.random() * total;
+  for (const [value, weight] of table) {
+    if (roll < weight) return value;
+    roll -= weight;
+  }
+  return table[0][0];
+}
+
+export function resolveBall(shot: ShotType): BallOutcome {
+  const result = weightedPick(OUTCOME_TABLES[shot]);
+  return result === -1
+    ? { runs: 0, wicketLost: true }
+    : { runs: result, wicketLost: false };
+}
+
+export function createMatchState(): MatchState {
+  return { score: 0, wickets: 0, balls: 0, isOut: false };
+}
+
+export function playBall(state: MatchState, shot: ShotType): BallOutcome {
+  const outcome = resolveBall(shot);
+  state.score += outcome.runs;
+  state.balls += 1;
+  if (outcome.wicketLost) state.wickets += 1;
+  if (state.wickets >= MAX_WICKETS || state.balls >= MAX_BALLS) {
+    state.isOut = true;
+  }
+  return outcome;
+}
+
+export function oversDisplay(balls: number): string {
+  const overs = Math.floor(balls / 6);
+  const rem = balls % 6;
+  return `${overs}.${rem}`;
+}

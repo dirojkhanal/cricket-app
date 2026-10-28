@@ -1,6 +1,8 @@
 # Cricket 3D Multiplayer Game — Build Plan
 
-Status: planning only, no code yet.
+Status: Phases 1–2 implemented (Three.js scene + single-player scoring
+loop), on branch `feature/threejs-scene`. See `SETUP.md` for exact current
+state, file-by-file — read that first, this doc is the original design.
 
 ## 1. Goal
 
