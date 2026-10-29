@@ -48,8 +48,45 @@ function weightedPick(table: [number, number][]): number {
   return table[0][0];
 }
 
-export function resolveBall(shot: ShotType): BallOutcome {
-  const result = weightedPick(OUTCOME_TABLES[shot]);
+// --- AI bowler: picks line/length each ball, biases batting risk ---
+
+export type Line = "off" | "straight" | "leg";
+export type Length = "short" | "good" | "full";
+export interface Delivery {
+  line: Line;
+  length: Length;
+}
+
+const LINES: Line[] = ["off", "straight", "leg"];
+const LENGTHS: Length[] = ["short", "good", "full"];
+
+// good length is hardest to score off and easiest to get out to;
+// short/full are easier to hit big but concede more boundaries
+const LENGTH_RISK: Record<Length, { wicketMult: number; boundaryMult: number }> = {
+  good: { wicketMult: 1.5, boundaryMult: 0.6 },
+  short: { wicketMult: 0.8, boundaryMult: 1.3 },
+  full: { wicketMult: 0.8, boundaryMult: 1.3 },
+};
+
+export function pickDelivery(previous?: Delivery): Delivery {
+  let next: Delivery;
+  do {
+    next = {
+      line: LINES[Math.floor(Math.random() * LINES.length)],
+      length: LENGTHS[Math.floor(Math.random() * LENGTHS.length)],
+    };
+  } while (previous && next.line === previous.line && next.length === previous.length);
+  return next;
+}
+
+export function resolveBall(shot: ShotType, delivery: Delivery): BallOutcome {
+  const risk = LENGTH_RISK[delivery.length];
+  const table: [number, number][] = OUTCOME_TABLES[shot].map(([value, weight]) => {
+    if (value === -1) return [value, weight * risk.wicketMult];
+    if (value >= 4) return [value, weight * risk.boundaryMult];
+    return [value, weight];
+  });
+  const result = weightedPick(table);
   return result === -1
     ? { runs: 0, wicketLost: true }
     : { runs: result, wicketLost: false };
@@ -59,8 +96,8 @@ export function createMatchState(): MatchState {
   return { score: 0, wickets: 0, balls: 0, isOut: false };
 }
 
-export function playBall(state: MatchState, shot: ShotType): BallOutcome {
-  const outcome = resolveBall(shot);
+export function playBall(state: MatchState, shot: ShotType, delivery: Delivery): BallOutcome {
+  const outcome = resolveBall(shot, delivery);
   state.score += outcome.runs;
   state.balls += 1;
   if (outcome.wicketLost) state.wickets += 1;
