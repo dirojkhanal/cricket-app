@@ -2,7 +2,9 @@ import * as THREE from "three";
 import {
   createMatchState,
   playBall,
+  pickDelivery,
   oversDisplay,
+  type Delivery,
   type ShotType,
 } from "./game";
 
@@ -71,11 +73,16 @@ const scoreboard = document.createElement("div");
 scoreboard.style.fontSize = "18px";
 ui.appendChild(scoreboard);
 
+const bowlerLine = document.createElement("div");
+bowlerLine.style.cssText = "position:fixed;top:48px;left:0;right:0;text-align:center;font-size:15px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8);";
+app.appendChild(bowlerLine);
+
 const controls = document.createElement("div");
 controls.style.cssText = "position:fixed;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:12px;";
 app.appendChild(controls);
 
 const state = createMatchState();
+let delivery: Delivery = pickDelivery();
 
 function makeButton(label: string, shot: ShotType) {
   const btn = document.createElement("button");
@@ -84,7 +91,8 @@ function makeButton(label: string, shot: ShotType) {
     "padding:12px 20px;font-size:16px;border-radius:8px;border:none;cursor:pointer;background:#fff;";
   btn.addEventListener("click", () => {
     if (state.isOut) return;
-    playBall(state, shot);
+    playBall(state, shot, delivery);
+    delivery = pickDelivery(delivery);
     render();
   });
   controls.appendChild(btn);
@@ -98,6 +106,9 @@ function render() {
   scoreboard.textContent = state.isOut
     ? `Innings over — Final: ${state.score}/${state.wickets} (${oversDisplay(state.balls)} overs)`
     : `${state.score}/${state.wickets}  (${oversDisplay(state.balls)} ov)`;
+  bowlerLine.textContent = state.isOut
+    ? ""
+    : `AI bowls: ${delivery.length} length, ${delivery.line}`;
 }
 
 render();
