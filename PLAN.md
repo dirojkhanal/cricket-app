@@ -1,9 +1,8 @@
 # Cricket 3D Multiplayer Game — Build Plan
 
 Status: Phases 1–3 implemented (Three.js scene, single-player scoring loop,
-rule-based AI bowler), on branch `feature/ai-opponent`. See `SETUP.md` for
-exact current state, file-by-file — read that first, this doc is the
-original design.
+rule-based AI bowler), merged into `main`. See `SETUP.md` for exact current
+state, file-by-file — read that first, this doc is the original design.
 
 ## 1. Goal
 
