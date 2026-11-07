@@ -1,4 +1,4 @@
-import { Room, Client } from "colyseus";
+import { Room, Client } from "@colyseus/core";
 import { Schema, type } from "@colyseus/schema";
 import {
   ShotType, Line, Length, Delivery, BallOutcome,
@@ -64,18 +64,18 @@ export class MatchState extends Schema {
   @type("boolean") lastWicket = false;
 }
 
-export class CricketRoom extends Room<{ state: MatchState }> {
+export class CricketRoom extends Room<MatchState> {
   maxClients = 2;
   private delivery: Delivery = { line: "straight", length: "good" };
 
-  onCreate(_options: Record<string, unknown> = {}) {
-    const state = new MatchState();
-    this.setState(state);
+  onCreate() {
+    this.setState(new MatchState());
     this.delivery = pickDelivery();
-    state.deliveryLine   = this.delivery.line;
-    state.deliveryLength = this.delivery.length;
+    this.state.deliveryLine   = this.delivery.line;
+    this.state.deliveryLength = this.delivery.length;
 
-    this.onMessage("shot", (client, msg: { shot: ShotType }) => {
+    this.onMessage("shot", (_client, msg: { shot: ShotType }) => {
+      const state = this.state;
       if (state.isOver) return;
       const outcome = resolveBall(msg.shot, this.delivery);
       state.score += outcome.runs;
