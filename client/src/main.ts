@@ -129,7 +129,7 @@ const batterControls = el("div", "display:flex;gap:12px;");
 controls.appendChild(batterControls);
 
 // Bowler controls
-const bowlerControls = el("div", "display:flex;flex-direction:column;align-items:center;gap:8px;");
+const bowlerControls = el("div", "display:none;flex-direction:column;align-items:center;gap:8px;");
 const lineRow  = el("div", "display:flex;gap:8px;");
 const lengthRow = el("div", "display:flex;gap:8px;");
 const bowlBtn  = el("button", btnStyle + "opacity:0.4;", "Bowl!");
